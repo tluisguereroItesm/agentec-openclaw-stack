@@ -1,0 +1,49 @@
+# Ejemplo de tarea programada para actualización mensual
+#
+# Opción A — cron (funciona en Ubuntu/WSL con o sin systemd)
+# Editar con: crontab -e
+# Ejecuta update.sh el día 1 de cada mes a las 03:00
+#
+# 0 3 1 * * /home/TU_USUARIO/agentec/agentec-openclaw-stack/scripts/update.sh >> /home/TU_USUARIO/agentec/logs/cron-update.log 2>&1
+#
+# ─────────────────────────────────────────────────────────────────────────────
+#
+# Opción B — systemd timer (requiere systemd habilitado en WSL)
+#
+# 1. Crear el archivo de servicio:
+#    sudo nano /etc/systemd/system/agentec-update.service
+#
+# Contenido:
+# [Unit]
+# Description=agentec-openclaw-stack monthly update
+# After=network-online.target
+# Wants=network-online.target
+#
+# [Service]
+# Type=oneshot
+# User=TU_USUARIO
+# ExecStart=/home/TU_USUARIO/agentec/agentec-openclaw-stack/scripts/update.sh
+# StandardOutput=append:/home/TU_USUARIO/agentec/logs/systemd-update.log
+# StandardError=append:/home/TU_USUARIO/agentec/logs/systemd-update.log
+#
+# 2. Crear el archivo de timer:
+#    sudo nano /etc/systemd/system/agentec-update.timer
+#
+# Contenido:
+# [Unit]
+# Description=agentec-openclaw-stack monthly update timer
+#
+# [Timer]
+# OnCalendar=monthly
+# Persistent=true
+#
+# [Install]
+# WantedBy=timers.target
+#
+# 3. Activar:
+#    sudo systemctl daemon-reload
+#    sudo systemctl enable --now agentec-update.timer
+#
+# 4. Verificar:
+#    systemctl status agentec-update.timer
+#    journalctl -u agentec-update.service

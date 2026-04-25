@@ -1,0 +1,6 @@
+.env
+*.log
+config/stack.env
+config/tools/**/profiles.json
+config/tools/**/*.local.json
+

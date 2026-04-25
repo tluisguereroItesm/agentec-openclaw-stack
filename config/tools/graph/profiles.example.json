@@ -1,0 +1,25 @@
+{
+  "_comment": "Copia este archivo a profiles.json y rellena tenantId y clientId con los valores de tu Azure App Registration. NUNCA subas profiles.json a git.",
+  "defaultProfile": "default",
+  "profiles": {
+    "default": {
+      "tenantId": "00000000-0000-0000-0000-000000000000",
+      "clientId": "00000000-0000-0000-0000-000000000000",
+      "authorityHost": "https://login.microsoftonline.com",
+
+      "mailScopes":            ["User.Read", "Mail.Read", "Mail.ReadBasic", "Mail.ReadWrite", "Mail.Send", "offline_access"],
+      "filesScopes":           ["User.Read", "Files.Read", "Files.Read.All", "Files.ReadWrite", "Files.ReadWrite.All", "Sites.Read.All", "Sites.ReadWrite.All", "offline_access"],
+      "calendarScopes":        ["User.Read", "Calendars.Read", "Calendars.Read.Shared", "Calendars.ReadBasic", "Calendars.ReadWrite", "Calendars.ReadWrite.Shared", "offline_access"],
+      "teamsScopes":           ["User.Read", "Team.ReadBasic.All", "Channel.ReadBasic.All", "ChannelMessage.Read.All", "ChannelMessage.Send", "Chat.Read", "offline_access"],
+      "flowsScopes":           ["User.Read", "Flows.Read.All", "Flows.Manage.All", "offline_access"],
+      "powerbiScopes":         ["https://analysis.windows.net/powerbi/api/.default", "offline_access"],
+      "usersScopes":           ["User.Read", "User.ReadBasic.All", "offline_access"],
+      "approvalsScopes":       ["User.Read", "ApprovalSolution.ReadWrite.All", "offline_access"],
+      "sharepointSearchScopes":["User.Read", "Sites.Read.All", "Files.Read.All", "offline_access"],
+
+      "defaultDriveMode": "me",
+      "siteHostname": "",
+      "sitePath": ""
+    }
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "gateway": {
+    "mode": "local"
+  },
+  "agents": {
+    "defaults": {
+      "workspace": "~/.openclaw/workspace"
+    }
+  },
+  "mcp": {
+    "servers": {
+      "agentec": {
+        "url": "http://agentec-mcp-server:3000/mcp",
+        "transport": "streamable-http"
+      }
+    }
+  },
+  "skills": {
+    "load": {
+      "extraDirs": ["~/.openclaw/skills"]
+    }
+  }
+}

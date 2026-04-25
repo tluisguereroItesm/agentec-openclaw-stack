@@ -1,0 +1,216 @@
+services:
+
+  # ─── OpenClaw gateway ────────────────────────────────────────────────────────
+  openclaw-gateway:
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    # ADVERTENCIA: Usa OPENCLAW_IMAGE en .env para fijar la versión (no 'latest').
+    # latest puede introducir breaking changes sin aviso.
+    image: ${OPENCLAW_IMAGE:-ghcr.io/openclaw/openclaw:latest}
+    environment:
+      HOME: /home/node
+      TERM: xterm-256color
+      OPENCLAW_GATEWAY_TOKEN: ${OPENCLAW_GATEWAY_TOKEN}
+      OPENCLAW_ALLOW_INSECURE_PRIVATE_WS: ${OPENCLAW_ALLOW_INSECURE_PRIVATE_WS:-}
+      CLAUDE_AI_SESSION_KEY: ${CLAUDE_AI_SESSION_KEY:-}
+      CLAUDE_WEB_SESSION_KEY: ${CLAUDE_WEB_SESSION_KEY:-}
+      CLAUDE_WEB_COOKIE: ${CLAUDE_WEB_COOKIE:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      OPENCLAW_LIVE_OPENROUTER_KEY: ${OPENROUTER_API_KEY:-}
+      TZ: ${OPENCLAW_TZ:-UTC}
+    volumes:
+      - ${OPENCLAW_CONFIG_DIR}:/home/node/.openclaw
+      - ${OPENCLAW_WORKSPACE_DIR}:/home/node/.openclaw/workspace
+      - ${AGENTEC_SKILLS_DIR}:/home/node/.openclaw/skills:ro
+    ports:
+      - "${OPENCLAW_GATEWAY_PORT:-18789}:18789"
+      - "${OPENCLAW_BRIDGE_PORT:-18790}:18790"
+    init: true
+    restart: unless-stopped
+    command:
+      - "node"
+      - "dist/index.js"
+      - "gateway"
+      - "--bind"
+      - "${OPENCLAW_GATEWAY_BIND:-lan}"
+      - "--port"
+      - "18789"
+    healthcheck:
+      test:
+        - "CMD"
+        - "node"
+        - "-e"
+        - "fetch('http://127.0.0.1:18789/healthz').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  # ─── Agentec MCP Aggregator ─────────────────────────────────────────────────
+  # Servidor MCP central: registra todas las tools aprobadas en approved-tools.yaml.
+  # Para agregar una tool: añadir handler en mcp-server/src/tools/ + entrada en yaml + push.
+  agentec-mcp-server:
+    build:
+      context: ../
+      dockerfile: agentec-catalog/mcp-server/Dockerfile
+    container_name: agentec-mcp-server
+    environment:
+      MCP_PORT: "3000"
+      CATALOG_DIR: /app/catalog
+      AGENTEC_MCP_AUTH_TOKEN: ${AGENTEC_MCP_AUTH_TOKEN}
+      AGENTEC_TOOLS_DIR: /app/external-tools
+      AGENTEC_STACK_CONFIG_DIR: /app/stack-config
+      AGENTEC_STACK_ENV_FILE: /app/stack-config/stack.env
+      AGENTEC_WEB_LOGIN_PROFILE: ${AGENTEC_WEB_LOGIN_PROFILE:-demo-login}
+      AGENTEC_WEB_LOGIN_CONFIG_FILE: ${AGENTEC_WEB_LOGIN_CONFIG_FILE:-/app/stack-config/tools/web-login/profiles.json}
+      AGENTEC_GRAPH_PROFILE: ${AGENTEC_GRAPH_PROFILE:-default}
+      AGENTEC_GRAPH_DEFAULT_TENANT_ID: ${AGENTEC_GRAPH_DEFAULT_TENANT_ID:-}
+      AGENTEC_GRAPH_DEFAULT_CLIENT_ID: ${AGENTEC_GRAPH_DEFAULT_CLIENT_ID:-}
+      AGENTEC_GRAPH_AUTHORITY_HOST: ${AGENTEC_GRAPH_AUTHORITY_HOST:-https://login.microsoftonline.com}
+      AGENTEC_GRAPH_ALLOW_TENANT_OVERRIDE: ${AGENTEC_GRAPH_ALLOW_TENANT_OVERRIDE:-0}
+      AGENTEC_GRAPH_MAIL_SCOPES: ${AGENTEC_GRAPH_MAIL_SCOPES:-User.Read Mail.Read Mail.ReadBasic offline_access}
+      AGENTEC_GRAPH_FILES_SCOPES: ${AGENTEC_GRAPH_FILES_SCOPES:-User.Read Files.Read Files.Read.All Sites.Read.All offline_access}
+      AGENTEC_GRAPH_CONFIG_FILE: ${AGENTEC_GRAPH_CONFIG_FILE:-/app/stack-config/tools/graph/profiles.json}
+      AGENTEC_GRAPH_TOKEN_STORE_DIR: /app/graph-tokens
+      TZ: ${OPENCLAW_TZ:-UTC}
+    volumes:
+      - ${AGENTEC_ARTIFACTS_DIR}:/app/artifacts
+      - ${AGENTEC_TOOLS_DIR}:/app/external-tools:ro
+      - ${AGENTEC_STACK_CONFIG_DIR}:/app/stack-config:ro
+      - ${AGENTEC_GRAPH_TOKEN_STORE_DIR}:/app/graph-tokens
+    ports:
+      - "${AGENTEC_MCP_PORT:-3002}:3000"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ─── Agentec MCP Aggregator (Python shadow) ─────────────────────────────────
+  # Shadow mode: corre en paralelo al MCP Node para pruebas espejo.
+  # Activar con profile `shadow` o vía scripts (AGENTEC_SHADOW_MODE=1).
+  agentec-mcp-server-py:
+    build:
+      context: ../
+      dockerfile: agentec-catalog/mcp-server-py/Dockerfile
+    container_name: agentec-mcp-server-py
+    environment:
+      MCP_PORT: "3100"
+      CATALOG_DIR: /app/catalog
+      AGENTEC_MCP_AUTH_TOKEN: ${AGENTEC_MCP_AUTH_TOKEN}
+      AGENTEC_MCP_TIMEOUT_SECONDS: ${AGENTEC_MCP_TIMEOUT_SECONDS:-20}
+      AGENTEC_MCP_MAX_TIMEOUT_SECONDS: ${AGENTEC_MCP_MAX_TIMEOUT_SECONDS:-120}
+      AGENTEC_MCP_LOG_LEVEL: ${AGENTEC_MCP_LOG_LEVEL:-INFO}
+      AGENTEC_TOOLS_DIR: /app/external-tools
+      AGENTEC_STACK_CONFIG_DIR: /app/stack-config
+      AGENTEC_STACK_ENV_FILE: /app/stack-config/stack.env
+      AGENTEC_WEB_LOGIN_PROFILE: ${AGENTEC_WEB_LOGIN_PROFILE:-demo-login}
+      AGENTEC_WEB_LOGIN_CONFIG_FILE: ${AGENTEC_WEB_LOGIN_CONFIG_FILE:-/app/stack-config/tools/web-login/profiles.json}
+      AGENTEC_WEB_LOGIN_BACKEND: ${AGENTEC_WEB_LOGIN_BACKEND:-auto}
+      AGENTEC_WEB_LOGIN_PY_ENTRYPOINT: ${AGENTEC_WEB_LOGIN_PY_ENTRYPOINT:-/app/external-tools/web-login-playwright-py/src/main.py}
+      AGENTEC_WEB_LOGIN_NODE_ENTRYPOINT: ${AGENTEC_WEB_LOGIN_NODE_ENTRYPOINT:-/app/external-tools/web-login-playwright/scripts/python-wrapper.js}
+      AGENTEC_GRAPH_PROFILE: ${AGENTEC_GRAPH_PROFILE:-default}
+      AGENTEC_GRAPH_DEFAULT_TENANT_ID: ${AGENTEC_GRAPH_DEFAULT_TENANT_ID:-}
+      AGENTEC_GRAPH_DEFAULT_CLIENT_ID: ${AGENTEC_GRAPH_DEFAULT_CLIENT_ID:-}
+      AGENTEC_GRAPH_AUTHORITY_HOST: ${AGENTEC_GRAPH_AUTHORITY_HOST:-https://login.microsoftonline.com}
+      AGENTEC_GRAPH_ALLOW_TENANT_OVERRIDE: ${AGENTEC_GRAPH_ALLOW_TENANT_OVERRIDE:-0}
+      AGENTEC_GRAPH_MAIL_SCOPES: ${AGENTEC_GRAPH_MAIL_SCOPES:-User.Read Mail.Read Mail.ReadBasic offline_access}
+      AGENTEC_GRAPH_FILES_SCOPES: ${AGENTEC_GRAPH_FILES_SCOPES:-User.Read Files.Read Files.Read.All Sites.Read.All offline_access}
+      AGENTEC_GRAPH_CONFIG_FILE: ${AGENTEC_GRAPH_CONFIG_FILE:-/app/stack-config/tools/graph/profiles.json}
+      AGENTEC_GRAPH_TOKEN_STORE_DIR: /app/graph-tokens
+      TZ: ${OPENCLAW_TZ:-UTC}
+    volumes:
+      - ${AGENTEC_ARTIFACTS_DIR}:/app/artifacts
+      - ${AGENTEC_TOOLS_DIR}:/app/external-tools:ro
+      - ${AGENTEC_STACK_CONFIG_DIR}:/app/stack-config:ro
+      - ${AGENTEC_GRAPH_TOKEN_STORE_DIR}:/app/graph-tokens
+    ports:
+      - "${AGENTEC_MCP_PY_PORT:-3102}:3100"
+    restart: unless-stopped
+    profiles:
+      - shadow
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:3100/health', timeout=3)"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ─── web-login-playwright tool runner ────────────────────────────────────────
+  # Runner one-shot: NO arranca con `up -d`. Se invoca con:
+  #   docker compose run --rm web-login-playwright node dist/index.js /input.json
+  web-login-playwright:
+    build:
+      context: ${AGENTEC_TOOLS_DIR:-../agentec-tools/tools}/web-login-playwright
+      dockerfile: Dockerfile
+    container_name: web-login-playwright
+    environment:
+      MCP_TRANSPORT: stdio
+      AGENTEC_STACK_CONFIG_DIR: /app/stack-config
+      AGENTEC_WEB_LOGIN_PROFILE: ${AGENTEC_WEB_LOGIN_PROFILE:-demo-login}
+      AGENTEC_WEB_LOGIN_CONFIG_FILE: ${AGENTEC_WEB_LOGIN_CONFIG_FILE:-/app/stack-config/tools/web-login/profiles.json}
+      TZ: ${OPENCLAW_TZ:-UTC}
+    volumes:
+      - ${AGENTEC_ARTIFACTS_DIR}:/app/artifacts
+      - ${AGENTEC_STACK_CONFIG_DIR}:/app/stack-config:ro
+    profiles:
+      - tools
+
+  # ─── graph-mail tool runner ────────────────────────────────────────────────
+  # Runner one-shot. Puede invocarse vía MCP o manualmente con:
+  #   docker compose run --rm graph-mail python src/main.py /input.json
+  graph-mail:
+    build:
+      context: ${AGENTEC_TOOLS_DIR:-../agentec-tools/tools}/graph-mail
+      dockerfile: Dockerfile
+    container_name: graph-mail
+    environment:
+      AGENTEC_STACK_CONFIG_DIR: /app/stack-config
+      AGENTEC_STACK_ENV_FILE: /app/stack-config/stack.env
+      AGENTEC_GRAPH_PROFILE: ${AGENTEC_GRAPH_PROFILE:-default}
+      AGENTEC_GRAPH_DEFAULT_TENANT_ID: ${AGENTEC_GRAPH_DEFAULT_TENANT_ID:-}
+      AGENTEC_GRAPH_DEFAULT_CLIENT_ID: ${AGENTEC_GRAPH_DEFAULT_CLIENT_ID:-}
+      AGENTEC_GRAPH_AUTHORITY_HOST: ${AGENTEC_GRAPH_AUTHORITY_HOST:-https://login.microsoftonline.com}
+      AGENTEC_GRAPH_ALLOW_TENANT_OVERRIDE: ${AGENTEC_GRAPH_ALLOW_TENANT_OVERRIDE:-1}
+      AGENTEC_GRAPH_MAIL_SCOPES: ${AGENTEC_GRAPH_MAIL_SCOPES:-User.Read Mail.Read Mail.ReadBasic offline_access}
+      AGENTEC_GRAPH_CONFIG_FILE: ${AGENTEC_GRAPH_CONFIG_FILE:-/app/stack-config/tools/graph/profiles.json}
+      AGENTEC_GRAPH_TOKEN_STORE_DIR: /app/graph-tokens
+      TZ: ${OPENCLAW_TZ:-UTC}
+    volumes:
+      - ${AGENTEC_ARTIFACTS_DIR}:/app/artifacts
+      - ${AGENTEC_STACK_CONFIG_DIR}:/app/stack-config:ro
+      - ${AGENTEC_GRAPH_TOKEN_STORE_DIR}:/app/graph-tokens
+    profiles:
+      - tools
+
+  # ─── graph-files tool runner ───────────────────────────────────────────────
+  # Runner one-shot. Puede invocarse vía MCP o manualmente con:
+  #   docker compose run --rm graph-files python src/main.py /input.json
+  graph-files:
+    build:
+      context: ${AGENTEC_TOOLS_DIR:-../agentec-tools/tools}/graph-files
+      dockerfile: Dockerfile
+    container_name: graph-files
+    environment:
+      AGENTEC_STACK_CONFIG_DIR: /app/stack-config
+      AGENTEC_STACK_ENV_FILE: /app/stack-config/stack.env
+      AGENTEC_GRAPH_PROFILE: ${AGENTEC_GRAPH_PROFILE:-default}
+      AGENTEC_GRAPH_DEFAULT_TENANT_ID: ${AGENTEC_GRAPH_DEFAULT_TENANT_ID:-}
+      AGENTEC_GRAPH_DEFAULT_CLIENT_ID: ${AGENTEC_GRAPH_DEFAULT_CLIENT_ID:-}
+      AGENTEC_GRAPH_AUTHORITY_HOST: ${AGENTEC_GRAPH_AUTHORITY_HOST:-https://login.microsoftonline.com}
+      AGENTEC_GRAPH_ALLOW_TENANT_OVERRIDE: ${AGENTEC_GRAPH_ALLOW_TENANT_OVERRIDE:-1}
+      AGENTEC_GRAPH_FILES_SCOPES: ${AGENTEC_GRAPH_FILES_SCOPES:-User.Read Files.Read Files.Read.All Sites.Read.All offline_access}
+      AGENTEC_GRAPH_CONFIG_FILE: ${AGENTEC_GRAPH_CONFIG_FILE:-/app/stack-config/tools/graph/profiles.json}
+      AGENTEC_GRAPH_TOKEN_STORE_DIR: /app/graph-tokens
+      TZ: ${OPENCLAW_TZ:-UTC}
+    volumes:
+      - ${AGENTEC_ARTIFACTS_DIR}:/app/artifacts
+      - ${AGENTEC_STACK_CONFIG_DIR}:/app/stack-config:ro
+      - ${AGENTEC_GRAPH_TOKEN_STORE_DIR}:/app/graph-tokens
+    profiles:
+      - tools
