@@ -1,21 +1,44 @@
 {
-  "_comment": "Copia este archivo a profiles.json y rellena tenantId y clientId con los valores de tu Azure App Registration. NUNCA subas profiles.json a git.",
-  "defaultProfile": "default",
+  "_comment": "Copia este archivo a profiles.json. Cambia de tenant con AGENTEC_GRAPH_PROFILE=personal|tec. NUNCA subas profiles.json a git.",
+  "_redirectUris": [
+    "http://localhost:18789/auth/callback",
+    "http://127.0.0.1:18789/auth/callback"
+  ],
+  "defaultProfile": "personal",
   "profiles": {
-    "default": {
+    "personal": {
       "tenantId": "00000000-0000-0000-0000-000000000000",
       "clientId": "00000000-0000-0000-0000-000000000000",
       "authorityHost": "https://login.microsoftonline.com",
 
-      "mailScopes":            ["User.Read", "Mail.Read", "Mail.ReadBasic", "Mail.ReadWrite", "Mail.Send", "offline_access"],
-      "filesScopes":           ["User.Read", "Files.Read", "Files.Read.All", "Files.ReadWrite", "Files.ReadWrite.All", "Sites.Read.All", "Sites.ReadWrite.All", "offline_access"],
-      "calendarScopes":        ["User.Read", "Calendars.Read", "Calendars.Read.Shared", "Calendars.ReadBasic", "Calendars.ReadWrite", "Calendars.ReadWrite.Shared", "offline_access"],
-      "teamsScopes":           ["User.Read", "Team.ReadBasic.All", "Channel.ReadBasic.All", "ChannelMessage.Read.All", "ChannelMessage.Send", "Chat.Read", "offline_access"],
-      "flowsScopes":           ["User.Read", "Flows.Read.All", "Flows.Manage.All", "offline_access"],
-      "powerbiScopes":         ["https://analysis.windows.net/powerbi/api/.default", "offline_access"],
-      "usersScopes":           ["User.Read", "User.ReadBasic.All", "offline_access"],
-      "approvalsScopes":       ["User.Read", "ApprovalSolution.ReadWrite.All", "offline_access"],
-      "sharepointSearchScopes":["User.Read", "Sites.Read.All", "Files.Read.All", "offline_access"],
+      "mailScopes": ["openid", "profile", "email", "offline_access", "User.Read", "Mail.ReadWrite", "Mail.Send"],
+      "filesScopes": ["openid", "profile", "email", "offline_access", "User.Read", "Files.ReadWrite", "Sites.Read.All", "Sites.ReadWrite.All"],
+      "calendarScopes": ["openid", "profile", "email", "offline_access", "User.Read", "Calendars.ReadWrite"],
+      "teamsScopes": ["openid", "profile", "email", "offline_access", "User.Read", "Team.ReadBasic.All", "Channel.ReadBasic.All", "ChannelMessage.Read.All", "ChannelMessage.Send", "Chat.Read"],
+      "flowsScopes": ["openid", "profile", "email", "offline_access", "User.Read", "Flows.Read.All", "Flows.Manage.All"],
+      "powerbiScopes": ["https://analysis.windows.net/powerbi/api/.default", "offline_access"],
+      "usersScopes": ["openid", "profile", "email", "offline_access", "User.Read"],
+      "approvalsScopes": ["openid", "profile", "email", "offline_access", "User.Read", "Approvals.Read.All", "Approvals.Manage.All"],
+      "sharepointSearchScopes": ["openid", "profile", "email", "offline_access", "User.Read", "Sites.Read.All", "Sites.Search.All"],
+
+      "defaultDriveMode": "me",
+      "siteHostname": "",
+      "sitePath": ""
+    },
+    "tec": {
+      "tenantId": "00000000-0000-0000-0000-000000000000",
+      "clientId": "00000000-0000-0000-0000-000000000000",
+      "authorityHost": "https://login.microsoftonline.com",
+
+      "mailScopes": ["openid", "profile", "email", "offline_access", "User.Read", "Mail.ReadWrite", "Mail.Send"],
+      "filesScopes": ["openid", "profile", "email", "offline_access", "User.Read", "Files.ReadWrite", "Sites.Read.All", "Sites.ReadWrite.All"],
+      "calendarScopes": ["openid", "profile", "email", "offline_access", "User.Read", "Calendars.ReadWrite"],
+      "teamsScopes": ["openid", "profile", "email", "offline_access", "User.Read", "Team.ReadBasic.All", "Channel.ReadBasic.All", "ChannelMessage.Read.All", "ChannelMessage.Send", "Chat.Read"],
+      "flowsScopes": ["openid", "profile", "email", "offline_access", "User.Read", "Flows.Read.All", "Flows.Manage.All"],
+      "powerbiScopes": ["https://analysis.windows.net/powerbi/api/.default", "offline_access"],
+      "usersScopes": ["openid", "profile", "email", "offline_access", "User.Read"],
+      "approvalsScopes": ["openid", "profile", "email", "offline_access", "User.Read", "Approvals.Read.All", "Approvals.Manage.All"],
+      "sharepointSearchScopes": ["openid", "profile", "email", "offline_access", "User.Read", "Sites.Read.All", "Sites.Search.All"],
 
       "defaultDriveMode": "me",
       "siteHostname": "",
