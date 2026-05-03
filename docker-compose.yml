@@ -25,6 +25,9 @@ services:
       - ${OPENCLAW_CONFIG_DIR}:/home/node/.openclaw
       - ${OPENCLAW_WORKSPACE_DIR}:/home/node/.openclaw/workspace
       - ${AGENTEC_SKILLS_DIR}:/home/node/.openclaw/skills:ro
+      # Artifacts generados por herramientas (curp-downloader, etc.) — montados como read-only
+      # en el workspace del gateway para que OpenClaw pueda servirlos al browser.
+      - ${AGENTEC_ARTIFACTS_DIR}:/home/node/.openclaw/workspace/artifacts:ro
       # Volumen nativo Linux para el mirror de runtime-deps (evita I/O lento en 9P/Windows)
       - openclaw-plugin-runtime-deps:/home/node/.openclaw/plugin-runtime-deps
     ports:
@@ -77,6 +80,9 @@ services:
       AGENTEC_GRAPH_FILES_SCOPES: ${AGENTEC_GRAPH_FILES_SCOPES:-User.Read Files.Read Files.Read.All Sites.Read.All offline_access}
       AGENTEC_GRAPH_CONFIG_FILE: ${AGENTEC_GRAPH_CONFIG_FILE:-/app/stack-config/tools/graph/profiles.json}
       AGENTEC_GRAPH_TOKEN_STORE_DIR: /app/graph-tokens
+      # Path donde el gateway OpenClaw puede servir los artifacts al browser.
+      # Debe coincidir con el mount point del gateway: /home/node/.openclaw/workspace/artifacts
+      AGENTEC_ARTIFACTS_GATEWAY_PATH: /home/node/.openclaw/workspace/artifacts
       TZ: ${OPENCLAW_TZ:-UTC}
     volumes:
       - ${AGENTEC_ARTIFACTS_DIR}:/app/artifacts
