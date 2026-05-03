@@ -25,6 +25,8 @@ services:
       - ${OPENCLAW_CONFIG_DIR}:/home/node/.openclaw
       - ${OPENCLAW_WORKSPACE_DIR}:/home/node/.openclaw/workspace
       - ${AGENTEC_SKILLS_DIR}:/home/node/.openclaw/skills:ro
+      # Volumen nativo Linux para el mirror de runtime-deps (evita I/O lento en 9P/Windows)
+      - openclaw-plugin-runtime-deps:/home/node/.openclaw/plugin-runtime-deps
     ports:
       - "${OPENCLAW_GATEWAY_PORT:-18789}:18789"
       - "${OPENCLAW_BRIDGE_PORT:-18790}:18790"
@@ -45,9 +47,9 @@ services:
         - "-e"
         - "fetch('http://127.0.0.1:18789/healthz').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
       interval: 30s
-      timeout: 5s
-      retries: 5
-      start_period: 20s
+      timeout: 10s
+      retries: 10
+      start_period: 300s
 
   # ─── Agentec MCP Aggregator ─────────────────────────────────────────────────
   # Servidor MCP central: registra todas las tools aprobadas en approved-tools.yaml.
@@ -214,3 +216,8 @@ services:
       - ${AGENTEC_GRAPH_TOKEN_STORE_DIR}:/app/graph-tokens
     profiles:
       - tools
+
+volumes:
+  # Almacena el mirror de plugin-runtime-deps en un volumen Docker nativo (Linux overlay)
+  # para evitar la lentitud del I/O cross-filesystem sobre 9P/VirtioFS (Windows host)
+  openclaw-plugin-runtime-deps:

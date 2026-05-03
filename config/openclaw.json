@@ -11,9 +11,18 @@
     "servers": {
       "agentec": {
         "url": "http://agentec-mcp-server:3000/mcp",
-        "transport": "streamable-http"
+        "transport": "streamable-http",
+        "headers": {
+          "Authorization": "Bearer ${AGENTEC_MCP_AUTH_TOKEN}"
+        }
       }
     }
+  },
+  "tools": {
+    "profile": "full",
+    "alsoAllow": [
+      "bundle-mcp"
+    ]
   },
   "skills": {
     "load": {
